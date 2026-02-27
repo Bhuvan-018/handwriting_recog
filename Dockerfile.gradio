@@ -1,0 +1,26 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    software-properties-common \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements_full.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application files
+COPY . .
+
+# Download model (will use Hugging Face cache)
+RUN python download_model.py || echo "Model will be downloaded at runtime"
+
+EXPOSE 7860
+
+# Run Gradio app
+CMD ["python", "app_gradio.py"]

@@ -1,0 +1,8 @@
+Flask==3.0.0
+Flask-Cors==4.0.0
+torch==2.2.0
+torchvision==0.17.0
+transformers==4.38.0
+Pillow==10.2.0
+jiwer==3.0.3
+requests==2.31.0
