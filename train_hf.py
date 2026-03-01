@@ -46,6 +46,17 @@ def preprocess_function(examples):
     return {"pixel_values": pixel_values, "labels": labels}
 
 if __name__ == "__main__":
+    # --- Check Device ---
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Using device: {device}")
+    
+    if device == "cpu":
+        print("WARNING: You are training on CPU. This will be extremely slow!")
+        print("If running on Google Colab, go to Runtime > Change runtime type > T4 GPU.")
+        # Optional: prompt user or wait, but for now just warn.
+    else:
+        print(f"GPU Detected: {torch.cuda.get_device_name(0)}")
+
     # --- Configuration ---
     # Using the Teklia/IAM-line dataset from Hugging Face
     # This dataset contains line-level images which are better for TrOCR context
