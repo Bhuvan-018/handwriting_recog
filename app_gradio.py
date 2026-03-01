@@ -6,7 +6,10 @@ from jiwer import cer, wer
 import os
 
 # Model Configuration
-MODEL_PATH = "models/trocr_base"
+MODEL_PATH = "bhuvan-018/trocr-handwriting-iam"
+BASE_MODEL_PATH = "models/trocr_base"
+DEFAULT_MODEL = "microsoft/trocr-base-handwritten"
+
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 print(f"Loading model on {DEVICE}...")
@@ -14,13 +17,18 @@ print(f"Loading model on {DEVICE}...")
 # Load model
 try:
     if os.path.exists(MODEL_PATH):
+        print(f"Loading fine-tuned model from {MODEL_PATH}")
         processor = TrOCRProcessor.from_pretrained(MODEL_PATH)
         model = VisionEncoderDecoderModel.from_pretrained(MODEL_PATH).to(DEVICE)
+    elif os.path.exists(BASE_MODEL_PATH):
+        print(f"Loading base model from {BASE_MODEL_PATH}")
+        processor = TrOCRProcessor.from_pretrained(BASE_MODEL_PATH)
+        model = VisionEncoderDecoderModel.from_pretrained(BASE_MODEL_PATH).to(DEVICE)
     else:
         # Load from Hugging Face Hub
-        model_name = "microsoft/trocr-base-handwritten"
-        processor = TrOCRProcessor.from_pretrained(model_name)
-        model = VisionEncoderDecoderModel.from_pretrained(model_name).to(DEVICE)
+        print(f"Loading default model from Hub: {DEFAULT_MODEL}")
+        processor = TrOCRProcessor.from_pretrained(DEFAULT_MODEL)
+        model = VisionEncoderDecoderModel.from_pretrained(DEFAULT_MODEL).to(DEVICE)
     print("Model loaded successfully!")
 except Exception as e:
     print(f"Error loading model: {e}")
@@ -30,26 +38,17 @@ except Exception as e:
 def recognize_handwriting(image, ground_truth=""):
     """
     Recognize handwritten text from image
-    
-    Args:
-        image: PIL Image or numpy array
-        ground_truth: Optional ground truth text for evaluation
-    
-    Returns:
-        prediction: Recognized text
-        metrics: Dictionary with CER and WER if ground truth provided
     """
     if model is None or processor is None:
-        return "Error: Model not loaded", {}
+        return "Error: Model not loaded", ""
     
     try:
-        # Convert to RGB if needed
-        if isinstance(image, Image.Image):
-            if image.mode != "RGB":
-                image = image.convert("RGB")
-        else:
+        # Convert numpy array to PIL Image if needed (Gradio usually returns PIL or numpy)
+        if not isinstance(image, Image.Image):
             image = Image.fromarray(image).convert("RGB")
-        
+        else:
+            image = image.convert("RGB")
+            
         # Run inference
         pixel_values = processor(image, return_tensors="pt").pixel_values.to(DEVICE)
         
@@ -97,15 +96,6 @@ with gr.Blocks(title="Handwriting Recognition", theme=gr.themes.Soft()) as demo:
             prediction_output = gr.Textbox(label="Predicted Text", lines=5)
             metrics_output = gr.Markdown(label="Metrics")
     
-    # Examples
-    gr.Markdown("### 📝 Example Images")
-    gr.Examples(
-        examples=[
-            ["TrOCR/Scripts/trocr_image.jpg", ""],
-        ] if os.path.exists("TrOCR/Scripts/trocr_image.jpg") else [],
-        inputs=[image_input, ground_truth_input],
-    )
-    
     gr.Markdown(
         """
         ---
@@ -115,7 +105,7 @@ with gr.Blocks(title="Handwriting Recognition", theme=gr.themes.Soft()) as demo:
         - ⚡ GPU-accelerated inference when available
         - 🎯 Optimized for handwritten text recognition
         
-        **Model:** `microsoft/trocr-base-handwritten`
+        **Model:** `microsoft/trocr-base-handwritten` (Fine-tuned on IAM)
         """
     )
     
@@ -127,4 +117,4 @@ with gr.Blocks(title="Handwriting Recognition", theme=gr.themes.Soft()) as demo:
     )
 
 if __name__ == "__main__":
-    demo.launch(share=False, server_name="0.0.0.0", server_port=7860)
+    demo.launch(share=False)
