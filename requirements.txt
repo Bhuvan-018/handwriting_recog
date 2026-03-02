@@ -3,8 +3,8 @@ Flask-Cors==4.0.0
 torch
 torchvision
 transformers==4.38.2
-Pillow==10.2.0
-jiwer==3.0.3
+Pillow
+jiwer
 requests==2.31.0
 scikit-learn==1.4.0
 accelerate==0.28.0
